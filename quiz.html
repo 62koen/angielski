@@ -235,7 +235,7 @@ function showResult() {
   const el = document.getElementById('score-num');
   el.textContent = `${correctCount}/${quizWords.length}`;
   el.style.color = pct===100?'var(--green)':pct>=60?'var(--accent)':'var(--red)';
-  const msgs = ['Hmm, te słówka jeszcze opierają się... 😅','Trzeba poćwiczyć 📚','Nieźle! 😊','Świetny wynik! 💪','Perfekcyjnie! 🏆'];
+  const msgs = ['Jeszcze idzie ciężko... 😅','Trzeba poćwiczyć 📚','Nieźle! 😊','Świetny wynik! 💪','Perfekcyjnie! 🏆'];
   document.getElementById('score-msg').textContent = msgs[Math.min(4,Math.floor(pct/25))];
   const c = document.getElementById('result-items'); c.innerHTML = '';
   results.forEach(r => {
