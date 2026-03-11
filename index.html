@@ -51,45 +51,65 @@
     <div class="skeleton" style="opacity:.6"></div>
     <div class="skeleton" style="opacity:.3"></div>
   </div>
+
+  <div id="archive-wrap" style="display:none;margin-top:40px">
+    <div class="section-title">🗂️ Archiwum</div>
+    <div id="archive-section"></div>
+  </div>
 </div>
 
 <footer style="margin-top:48px;text-align:center;font-size:12px;color:var(--muted)">
-  <a href="https://github.com/62koen/angielski" target="_blank" style="color:var(--accent);text-decoration:none">GitHub</a>
+  Materiały na <a href="https://github.com/62koen/angielski" target="_blank" style="color:var(--accent);text-decoration:none">github.com/62koen/angielski</a>
 </footer>
 
 <script>
+function renderCards(items, container, pathPrefix) {
+  items.forEach((ch, i) => {
+    const div = document.createElement('div');
+    div.className = 'chapter-card fadein';
+    div.style.animationDelay = `${i * 60}ms`;
+    const enc = encodeURIComponent(pathPrefix + ch.file);
+    div.innerHTML = `
+      <div class="chapter-info">
+        <div class="chapter-name">${ch.name}</div>
+        <div class="chapter-meta">${ch.words.length} słówek</div>
+      </div>
+      <div class="chapter-actions">
+        <a href="quiz.html?plik=${enc}" class="btn">🎯 Quiz</a>
+        <a href="lista.html?plik=${enc}" class="btn btn-ghost">📖 Lista</a>
+      </div>`;
+    container.appendChild(div);
+  });
+}
+
 async function loadChapters() {
   const sec = document.getElementById('chapters-section');
   try {
     const idx = await fetch('rozdzialy/index.json').then(r => r.json());
+
     const chapters = await Promise.all(
-      idx.chapters.map(file =>
-        fetch(`rozdzialy/${file}`)
-          .then(r => r.json())
-          .then(data => ({ file, ...data }))
+      (idx.chapters || []).map(file =>
+        fetch(`rozdzialy/${file}`).then(r => r.json()).then(data => ({ file, ...data }))
       )
     );
+    const archive = await Promise.all(
+      (idx.archiwum || []).map(file =>
+        fetch(`rozdzialy/archiwum/${file}`).then(r => r.json()).then(data => ({ file, ...data }))
+      )
+    );
+
     sec.innerHTML = '';
     if (!chapters.length) {
       sec.innerHTML = `<div class="empty-state"><div class="empty-icon">📭</div><p>Brak dostępnych rozdziałów.</p></div>`;
-      return;
+    } else {
+      renderCards(chapters, sec, '');
     }
-    chapters.forEach((ch, i) => {
-      const div = document.createElement('div');
-      div.className = 'chapter-card fadein';
-      div.style.animationDelay = `${i * 60}ms`;
-      const enc = encodeURIComponent(ch.file);
-      div.innerHTML = `
-        <div class="chapter-info">
-          <div class="chapter-name">${ch.name}</div>
-          <div class="chapter-meta">${ch.words.length} słówek</div>
-        </div>
-        <div class="chapter-actions">
-          <a href="quiz.html?plik=${enc}" class="btn">🎯 Quiz</a>
-          <a href="lista.html?plik=${enc}" class="btn btn-ghost">📖 Lista</a>
-        </div>`;
-      sec.appendChild(div);
-    });
+
+    if (archive.length) {
+      document.getElementById('archive-wrap').style.display = 'block';
+      renderCards(archive, document.getElementById('archive-section'), 'archiwum/');
+    }
+
   } catch {
     sec.innerHTML = `<div class="empty-state"><div class="empty-icon">⚠️</div><p>Nie udało się załadować rozdziałów.<br>Spróbuj odświeżyć stronę.</p></div>`;
   }

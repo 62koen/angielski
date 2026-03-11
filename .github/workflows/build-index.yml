@@ -15,14 +15,27 @@ jobs:
 
       - name: Generuj index.json
         run: |
-          files=$(ls rozdzialy/*.json 2>/dev/null | grep -v 'rozdzialy/index.json' | sort)
+          active_files=$(ls rozdzialy/*.json 2>/dev/null | grep -v 'rozdzialy/index.json' | sort)
+          archive_files=$(ls rozdzialy/archiwum/*.json 2>/dev/null | sort)
+
           printf '{"chapters":[' > rozdzialy/index.json
+
           first=true
-          for f in $files; do
+          for f in $active_files; do
             [ -f "$f" ] || continue
             if [ "$first" = true ]; then first=false; else printf ',' >> rozdzialy/index.json; fi
             printf '"'"$(basename $f)"'"' >> rozdzialy/index.json
           done
+
+          printf '],"archiwum":[' >> rozdzialy/index.json
+
+          first=true
+          for f in $archive_files; do
+            [ -f "$f" ] || continue
+            if [ "$first" = true ]; then first=false; else printf ',' >> rozdzialy/index.json; fi
+            printf '"'"$(basename $f)"'"' >> rozdzialy/index.json
+          done
+
           printf ']}' >> rozdzialy/index.json
           echo "Wygenerowano index.json:"
           cat rozdzialy/index.json
