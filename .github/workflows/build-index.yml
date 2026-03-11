@@ -1,0 +1,36 @@
+name: Generuj listę rozdziałów
+
+on:
+  push:
+    paths:
+      - 'rozdzialy/**.json'
+
+jobs:
+  build-index:
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Generuj index.json
+        run: |
+          files=$(ls rozdzialy/*.json 2>/dev/null | grep -v 'rozdzialy/index.json' | sort)
+          printf '{"chapters":[' > rozdzialy/index.json
+          first=true
+          for f in $files; do
+            [ -f "$f" ] || continue
+            if [ "$first" = true ]; then first=false; else printf ',' >> rozdzialy/index.json; fi
+            printf '"'"$(basename $f)"'"' >> rozdzialy/index.json
+          done
+          printf ']}' >> rozdzialy/index.json
+          echo "Wygenerowano index.json:"
+          cat rozdzialy/index.json
+
+      - name: Commit index.json
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "github-actions[bot]@users.noreply.github.com"
+          git add rozdzialy/index.json
+          git diff --staged --quiet || git commit -m "Auto: aktualizacja index.json"
+          git push

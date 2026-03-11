@@ -1,0 +1,92 @@
+<!DOCTYPE html>
+<html lang="pl">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Lista słówek</title>
+<link href="https://fonts.googleapis.com/css2?family=Syne:wght@400;700;800&family=DM+Sans:ital,wght@0,300;0,400;0,500;1,300&display=swap" rel="stylesheet">
+<style>
+  :root{--bg:#0f0f0f;--card:#1a1a1a;--card2:#222;--accent:#f5c842;--accent2:#ff6b35;--text:#f0f0f0;--muted:#888;--border:#2e2e2e}
+  *{box-sizing:border-box;margin:0;padding:0}
+  body{background:var(--bg);color:var(--text);font-family:'DM Sans',sans-serif;min-height:100vh;display:flex;flex-direction:column;align-items:center;padding:32px 16px 60px}
+  body::before{content:'';position:fixed;inset:0;background-image:url("data:image/svg+xml,%3Csvg viewBox='0 0 200 200' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.75' numOctaves='4' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)' opacity='0.035'/%3E%3C/svg%3E");pointer-events:none;z-index:999;opacity:0.4}
+  header{text-align:center;margin-bottom:40px;width:100%;max-width:700px}
+  .label{font-size:11px;letter-spacing:4px;text-transform:uppercase;color:var(--accent);font-weight:500;margin-bottom:10px}
+  h1{font-family:'Syne',sans-serif;font-size:clamp(2rem,6vw,3.5rem);font-weight:800;line-height:1}
+  h1 span{color:var(--accent)}
+  .subtitle{color:var(--muted);margin-top:10px;font-size:14px;margin-bottom:14px}
+  .nav{display:flex;gap:10px;justify-content:center;flex-wrap:wrap}
+  .nav a{font-size:13px;color:var(--muted);text-decoration:none;border:1px solid var(--border);border-radius:8px;padding:6px 14px;transition:all .2s}
+  .nav a:hover,.nav a.active{border-color:var(--accent);color:var(--accent);background:rgba(245,200,66,.06)}
+  .controls{width:100%;max-width:700px;display:flex;gap:12px;margin-bottom:16px;align-items:center}
+  .search-input{flex:1;background:var(--card);border:1px solid var(--border);border-radius:10px;padding:11px 18px;font-family:'DM Sans',sans-serif;font-size:14px;color:var(--text);outline:none;transition:border-color .2s}
+  .search-input:focus{border-color:var(--accent)}
+  .search-input::placeholder{color:var(--muted)}
+  .count-badge{font-size:12px;color:var(--muted);white-space:nowrap;padding:6px 12px;background:var(--card);border:1px solid var(--border);border-radius:8px}
+  .list-wrap{width:100%;max-width:700px}
+  .letter-group{margin-bottom:8px}
+  .letter-heading{font-family:'Syne',sans-serif;font-size:11px;font-weight:700;letter-spacing:4px;text-transform:uppercase;color:var(--accent2);padding:10px 20px 6px}
+  .word-table{background:var(--card);border:1px solid var(--border);border-radius:14px;overflow:hidden}
+  .word-row{display:grid;grid-template-columns:1fr 1fr;padding:11px 20px;border-bottom:1px solid var(--border);font-size:14px;transition:background .15s}
+  .word-row:last-child{border-bottom:none}
+  .word-row:hover{background:var(--card2)}
+  .word-pl{color:var(--muted)}
+  .word-en{color:var(--text);font-weight:500}
+  @media(max-width:480px){.word-row{grid-template-columns:1fr;gap:2px;padding:10px 16px}.word-en{color:var(--accent)}}
+</style>
+</head>
+<body>
+<header>
+  <div class="label" id="chapter-label">Lista słówek</div>
+  <h1>Lista <span>słówek</span></h1>
+  <p class="subtitle">Posortowana A–Z po angielskim</p>
+  <nav class="nav">
+    <a href="index.html">← Rozdziały</a>
+    <a href="#" class="active">📖 Lista</a>
+    <a href="#" id="quiz-link">🎯 Quiz</a>
+  </nav>
+</header>
+
+<div class="controls">
+  <input class="search-input" type="text" id="search" placeholder="Szukaj..." oninput="renderList()" autocomplete="off" spellcheck="false" />
+  <div class="count-badge" id="count-badge">—</div>
+</div>
+<div class="list-wrap" id="list-wrap"></div>
+
+<script>
+const plik = new URLSearchParams(location.search).get('plik');
+let allWords = [];
+
+async function init() {
+  if (!plik) { location.href = 'index.html'; return; }
+  try {
+    const ch = await fetch(`rozdzialy/${plik}`).then(r => r.json());
+    allWords = ch.words;
+    document.getElementById('chapter-label').textContent = ch.name;
+    document.getElementById('quiz-link').href = `quiz.html?plik=${encodeURIComponent(plik)}`;
+    document.title = `Lista – ${ch.name}`;
+    renderList();
+  } catch { location.href = 'index.html'; }
+}
+
+function renderList() {
+  const q = document.getElementById('search').value.toLowerCase().trim();
+  const sorted = [...allWords].sort((a,b) => a.en.localeCompare(b.en));
+  const filtered = q ? sorted.filter(w => w.en.toLowerCase().includes(q) || w.pl.toLowerCase().includes(q)) : sorted;
+  document.getElementById('count-badge').textContent = `${filtered.length} słówek`;
+  const wrap = document.getElementById('list-wrap');
+  if (!filtered.length) { wrap.innerHTML = '<div style="text-align:center;color:var(--muted);padding:40px">Brak wyników 🤷</div>'; return; }
+  const groups = {};
+  filtered.forEach(w => { const l = w.en[0].toUpperCase(); if (!groups[l]) groups[l]=[]; groups[l].push(w); });
+  wrap.innerHTML = Object.keys(groups).sort().map(l => `
+    <div class="letter-group">
+      <div class="letter-heading">${l}</div>
+      <div class="word-table">
+        ${groups[l].map(w=>`<div class="word-row"><span class="word-pl">${w.pl}</span><span class="word-en">${w.en}</span></div>`).join('')}
+      </div>
+    </div>`).join('');
+}
+init();
+</script>
+</body>
+</html>

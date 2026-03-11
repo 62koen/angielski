@@ -1,0 +1,96 @@
+<!DOCTYPE html>
+<html lang="pl">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Słówka – Wybierz rozdział</title>
+<link href="https://fonts.googleapis.com/css2?family=Syne:wght@400;700;800&family=DM+Sans:ital,wght@0,300;0,400;0,500;1,300&display=swap" rel="stylesheet">
+<style>
+  :root{--bg:#0f0f0f;--card:#1a1a1a;--card2:#222;--accent:#f5c842;--accent2:#ff6b35;--text:#f0f0f0;--muted:#888;--border:#2e2e2e}
+  *{box-sizing:border-box;margin:0;padding:0}
+  body{background:var(--bg);color:var(--text);font-family:'DM Sans',sans-serif;min-height:100vh;display:flex;flex-direction:column;align-items:center;padding:32px 16px 80px}
+  body::before{content:'';position:fixed;inset:0;background-image:url("data:image/svg+xml,%3Csvg viewBox='0 0 200 200' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.75' numOctaves='4' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)' opacity='0.035'/%3E%3C/svg%3E");pointer-events:none;z-index:999;opacity:0.4}
+  .page{width:100%;max-width:620px}
+  header{text-align:center;margin-bottom:48px}
+  .label{font-size:11px;letter-spacing:4px;text-transform:uppercase;color:var(--accent);font-weight:500;margin-bottom:10px}
+  h1{font-family:'Syne',sans-serif;font-size:clamp(2.2rem,7vw,4rem);font-weight:800;line-height:1}
+  h1 span{color:var(--accent)}
+  .subtitle{color:var(--muted);margin-top:10px;font-size:14px}
+  .section-title{font-family:'Syne',sans-serif;font-size:11px;font-weight:700;letter-spacing:4px;text-transform:uppercase;color:var(--accent2);margin-bottom:14px}
+  .btn{display:inline-flex;align-items:center;gap:7px;background:var(--accent);color:#000;font-family:'Syne',sans-serif;font-weight:700;font-size:14px;padding:11px 22px;border-radius:10px;border:none;cursor:pointer;transition:transform .15s,opacity .15s;white-space:nowrap;text-decoration:none}
+  .btn:hover{transform:translateY(-2px);opacity:.92}
+  .btn-ghost{background:transparent;border:1px solid var(--border);color:var(--muted);font-family:'DM Sans',sans-serif;font-size:13px}
+  .btn-ghost:hover{border-color:var(--accent);color:var(--accent);opacity:1}
+  .chapter-card{background:var(--card);border:1px solid var(--border);border-radius:14px;padding:20px 22px;display:flex;align-items:center;justify-content:space-between;margin-bottom:10px;gap:12px;flex-wrap:wrap;transition:border-color .2s}
+  .chapter-card:hover{border-color:#444}
+  .chapter-info{flex:1;min-width:0}
+  .chapter-name{font-family:'Syne',sans-serif;font-weight:700;font-size:16px;margin-bottom:3px}
+  .chapter-meta{font-size:12px;color:var(--muted)}
+  .chapter-actions{display:flex;gap:8px;align-items:center;flex-shrink:0}
+  .skeleton{background:var(--card);border:1px solid var(--border);border-radius:14px;padding:20px 22px;margin-bottom:10px;height:72px;position:relative;overflow:hidden}
+  .skeleton::after{content:'';position:absolute;inset:0;background:linear-gradient(90deg,transparent,rgba(255,255,255,.04),transparent);animation:shimmer 1.4s infinite}
+  @keyframes shimmer{0%{transform:translateX(-100%)}100%{transform:translateX(100%)}}
+  .empty-state{text-align:center;padding:60px 20px;color:var(--muted);background:var(--card);border:1px solid var(--border);border-radius:16px}
+  .empty-state .empty-icon{font-size:40px;margin-bottom:14px}
+  .empty-state p{font-size:14px;line-height:1.7}
+  @keyframes fadein{from{opacity:0;transform:translateY(8px)}to{opacity:1;transform:none}}
+  .fadein{animation:fadein .35s ease forwards;animation-fill-mode:both}
+</style>
+</head>
+<body>
+<div class="page">
+  <header>
+    <div class="label">Angielski · Słówka</div>
+    <h1>Wybierz <span>rozdział</span></h1>
+    <p class="subtitle">Ucz się i sprawdzaj słówka z każdego rozdziału</p>
+  </header>
+
+  <div class="section-title">Dostępne rozdziały</div>
+  <div id="chapters-section">
+    <div class="skeleton"></div>
+    <div class="skeleton" style="opacity:.6"></div>
+    <div class="skeleton" style="opacity:.3"></div>
+  </div>
+</div>
+
+<script>
+async function loadChapters() {
+  const sec = document.getElementById('chapters-section');
+  try {
+    const idx = await fetch('rozdzialy/index.json').then(r => r.json());
+    const chapters = await Promise.all(
+      idx.chapters.map(file =>
+        fetch(`rozdzialy/${file}`)
+          .then(r => r.json())
+          .then(data => ({ file, ...data }))
+      )
+    );
+    sec.innerHTML = '';
+    if (!chapters.length) {
+      sec.innerHTML = `<div class="empty-state"><div class="empty-icon">📭</div><p>Brak dostępnych rozdziałów.</p></div>`;
+      return;
+    }
+    chapters.forEach((ch, i) => {
+      const div = document.createElement('div');
+      div.className = 'chapter-card fadein';
+      div.style.animationDelay = `${i * 60}ms`;
+      const enc = encodeURIComponent(ch.file);
+      div.innerHTML = `
+        <div class="chapter-info">
+          <div class="chapter-name">${ch.name}</div>
+          <div class="chapter-meta">${ch.words.length} słówek</div>
+        </div>
+        <div class="chapter-actions">
+          <a href="quiz.html?plik=${enc}" class="btn">🎯 Quiz</a>
+          <a href="lista.html?plik=${enc}" class="btn btn-ghost">📖 Lista</a>
+        </div>`;
+      sec.appendChild(div);
+    });
+  } catch {
+    sec.innerHTML = `<div class="empty-state"><div class="empty-icon">⚠️</div><p>Nie udało się załadować rozdziałów.<br>Spróbuj odświeżyć stronę.</p></div>`;
+  }
+}
+loadChapters();
+</script>
+</body>
+</html>
