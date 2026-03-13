@@ -7,7 +7,7 @@ on:
 
 jobs:
   build-index:
-    runs-on: ubuntu-latest
+    runs-on: docker
     permissions:
       contents: write
     steps:
