@@ -1,4 +1,4 @@
-# Projekt przeniesiony na [Codeberg](https://codeberg.org/koen/angielski);
+# Projekt przeniesiony na [Codeberg](https://codeberg.org/koen/angielski)
 
 ---
 
