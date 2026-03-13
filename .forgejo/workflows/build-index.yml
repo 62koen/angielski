@@ -7,7 +7,7 @@ on:
 
 jobs:
   build-index:
-    runs-on: docker
+    runs-on: codeberg-small
     permissions:
       contents: write
     steps:
