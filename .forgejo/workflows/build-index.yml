@@ -11,7 +11,7 @@ jobs:
     permissions:
       contents: write
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v3
 
       - name: Generuj index.json
         run: |
@@ -42,8 +42,8 @@ jobs:
 
       - name: Commit index.json
         run: |
-          git config user.name "github-actions[bot]"
-          git config user.email "github-actions[bot]@users.noreply.github.com"
+          git config user.name "forgejo-actions[bot]"
+          git config user.email "forgejo-actions[bot]@noreply.codeberg.org"
           git add rozdzialy/index.json
           git diff --staged --quiet || git commit -m "Auto: aktualizacja index.json"
           git push
