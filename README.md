@@ -1,3 +1,7 @@
+# Projekt przeniesiony na [Codeberg](https://codeberg.org/koen/angielski);
+
+---
+
 *Projekt wykonany przez model SI **Claude Sonnet 4.6***
 
 ## Parę słów o
