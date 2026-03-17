@@ -92,16 +92,24 @@ async function loadChapters() {
   try {
     const idx = await fetch('rozdzialy/index.json').then(r => r.json());
 
-    const chapters = await Promise.all(
+    const chapterSort = (a, b) => {
+      const nums = s => s.match(/\d+/g)?.map(Number) || [];
+      const [a1=0, a2=0, a3=0] = nums(a.file);
+      const [b1=0, b2=0, b3=0] = nums(b.file);
+      return a1-b1 || a2-b2 || a3-b3;
+    };
+
+    const chapters = (await Promise.all(
       (idx.chapters || []).map(file =>
         fetch(`rozdzialy/${file}`).then(r => r.json()).then(data => ({ file, ...data }))
       )
-    );
-    const archive = await Promise.all(
+    )).sort(chapterSort);
+
+    const archive = (await Promise.all(
       (idx.archiwum || []).map(file =>
         fetch(`rozdzialy/archiwum/${file}`).then(r => r.json()).then(data => ({ file, ...data }))
       )
-    );
+    )).sort(chapterSort);
 
     sec.innerHTML = '';
     if (!chapters.length) {
