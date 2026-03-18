@@ -1,4 +1,6 @@
-*Projekt wykonany przy użyciu SI **Claude Sonnet 4.6***
+# Angielski
+
+> *Projekt wykonany przy użyciu SI **Claude Sonnet 4.6***
 
 ## Parę słów o
 Na tej stronie można szlifować słówka z j. angielskiego z **repetytorium Express Publishing (podstawa i rozszerzenie)** w dwóch formach - lista słówek i quizy. W pierwszym przypadku dostajemy po prostu alfabetyczną listę słówek. W drugim przypadku strona wybiera **15** losowych słówek po polsku i należy napisać ich angielskie odpowiedniki. Po zakończeniu testu ukazuje się podsumowanie i z jego poziomu można powtórzyć test, tym razem tylko z rzeczy, których nie udało się odgadnąć.
