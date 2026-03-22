@@ -134,7 +134,7 @@
 const plik = new URLSearchParams(location.search).get('plik');
 let chapterWords = [], currentMode = 'loose';
 let quizWords = [], currentIndex = 0, correctCount = 0, wrongCount = 0;
-let answered = false, results = [], wrongPool = [], wrongOnly = false;
+let answered = false, results = [], wrongPool = [], wrongOnly = false, answeredAt = 0;
 
 async function init() {
   if (!plik) { location.href = 'index.html'; return; }
@@ -212,6 +212,7 @@ function checkAnswer() {
   if (ok) { correctCount++; input.classList.add('correct'); fb.className='feedback correct show'; fb.innerHTML=`✓ Brawo! <strong>${w.en}</strong>`; }
   else { wrongCount++; input.classList.add('wrong'); fb.className='feedback wrong show'; fb.innerHTML=`✗ Niestety. Poprawna odpowiedź: <strong>${w.en}</strong>`; }
   results.push({word:w, ok});
+  answeredAt = Date.now();
   document.getElementById('q-score-live').innerHTML = `✓ ${correctCount} &nbsp;✗ ${wrongCount}`;
   document.getElementById('btn-check').style.display = 'none';
   document.getElementById('btn-skip').style.display = 'none';
@@ -221,6 +222,7 @@ function checkAnswer() {
 function skipQuestion() {
   if (answered) return;
   answered = true;
+  answeredAt = Date.now();
   const w = quizWords[currentIndex]; wrongCount++;
   results.push({word:w, ok:false});
   const input = document.getElementById('answer-input'); input.disabled = true; input.classList.add('wrong');
@@ -233,7 +235,16 @@ function skipQuestion() {
   else setTimeout(showResult, 1200);
 }
 function nextQuestion() { currentIndex++; loadQuestion(); }
-function handleKey(e) { if(e.key==='Enter'){ if(!answered) checkAnswer(); else if(currentIndex<quizWords.length-1) nextQuestion(); } }
+function handleKey(e) { if(e.key==='Enter'){ if(!answered){ if(document.getElementById('answer-input').value.trim()) checkAnswer(); else skipQuestion(); } else if(currentIndex<quizWords.length-1) nextQuestion(); } }
+document.addEventListener('keydown', e => {
+  if (e.key !== 'Enter') return;
+  if (answered && Date.now()-answeredAt>=250 && document.getElementById('screen-quiz').classList.contains('active')) {
+    if (currentIndex < quizWords.length-1) nextQuestion();
+  } else if (document.getElementById('screen-result').classList.contains('active')) {
+    const wc = results.filter(r => !r.ok).length;
+    if (wc > 0) retryWrong(); else startQuiz();
+  }
+});
 function showResult() {
   showScreen('result');
   const pct = Math.round((correctCount/quizWords.length)*100);
