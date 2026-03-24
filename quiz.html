@@ -80,11 +80,10 @@
 
 <div id="screen-start" class="active">
   <div class="start-card">
-    <p>Zostanie wylosowanych <strong>15 słówek</strong> z tego zestawu.</p>
-    <div style="margin-bottom:16px;font-size:13px;color:var(--muted)">Tryb sprawdzania:</div>
+    <div style="margin-bottom:16px;font-size:13px;color:var(--muted)">Liczba słówek (losowo):</div>
     <div class="mode-toggle">
-      <button class="mode-btn selected" onclick="selectMode(this,'loose')">Toleruje literówki</button>
-      <button class="mode-btn" onclick="selectMode(this,'exact')">Dokładne dopasowanie</button>
+      <div class="mode-btn selected" id="mode-random" onclick="selectRandomMode()" style="display:flex;align-items:center;gap:6px"><input type="number" id="random-count" value="15" min="1" max="9999" onclick="event.stopPropagation();selectRandomMode()" style="width:48px;background:transparent;border:none;border-bottom:1px solid currentColor;color:inherit;font-family:inherit;font-size:inherit;font-weight:inherit;text-align:center;outline:none;padding:0" />słówek</div>
+      <button class="mode-btn" id="mode-all" onclick="selectAllMode()">Wszystkie</button>
     </div>
     <button class="btn" onclick="startQuiz()">Zacznij quiz 🚀</button>
   </div>
@@ -132,9 +131,9 @@
 
 <script>
 const plik = new URLSearchParams(location.search).get('plik');
-let chapterWords = [], currentMode = 'loose';
+let chapterWords = [], quizMode = 'random';
 let quizWords = [], currentIndex = 0, correctCount = 0, wrongCount = 0;
-let answered = false, results = [], wrongPool = [], wrongOnly = false;
+let answered = false, results = [], wrongPool = [], wrongOnly = false, answeredAt = 0;
 
 async function init() {
   if (!plik) { location.href = 'index.html'; return; }
@@ -147,9 +146,15 @@ async function init() {
   } catch { location.href = 'index.html'; }
 }
 
-function selectMode(btn, mode) {
-  document.querySelectorAll('.mode-btn').forEach(b => b.classList.remove('selected'));
-  btn.classList.add('selected'); currentMode = mode;
+function selectRandomMode() {
+  quizMode = 'random';
+  document.getElementById('mode-random').classList.add('selected');
+  document.getElementById('mode-all').classList.remove('selected');
+}
+function selectAllMode() {
+  quizMode = 'all';
+  document.getElementById('mode-all').classList.add('selected');
+  document.getElementById('mode-random').classList.remove('selected');
 }
 function shuffle(arr) {
   const a = [...arr];
@@ -158,7 +163,12 @@ function shuffle(arr) {
 }
 function startQuiz() {
   const pool = wrongOnly && wrongPool.length ? wrongPool : chapterWords;
-  quizWords = shuffle(pool).slice(0, Math.min(15, pool.length));
+  if (quizMode === 'all') {
+    quizWords = shuffle(pool);
+  } else {
+    const count = parseInt(document.getElementById('random-count').value) || 15;
+    quizWords = shuffle(pool).slice(0, Math.min(count, pool.length));
+  }
   currentIndex = 0; correctCount = 0; wrongCount = 0; results = []; wrongOnly = false;
   showScreen('quiz'); loadQuestion();
 }
@@ -190,15 +200,8 @@ function loadQuestion() {
   card.classList.remove('pop'); void card.offsetWidth; card.classList.add('pop');
   setTimeout(() => input.focus(), 50);
 }
-function lev(a, b) {
-  const dp = Array.from({length:a.length+1},(_,i)=>Array.from({length:b.length+1},(_,j)=>i===0?j:j===0?i:0));
-  for (let i=1;i<=a.length;i++) for (let j=1;j<=b.length;j++) dp[i][j]=a[i-1]===b[j-1]?dp[i-1][j-1]:1+Math.min(dp[i-1][j],dp[i][j-1],dp[i-1][j-1]);
-  return dp[a.length][b.length];
-}
 function isCorrect(u, c) {
-  u = u.toLowerCase().trim(); c = c.toLowerCase().trim();
-  if (u === c) return true;
-  return currentMode === 'loose' ? lev(u,c) <= Math.max(1, Math.floor(c.length*.2)) : false;
+  return u.toLowerCase().trim() === c.toLowerCase().trim();
 }
 function checkAnswer() {
   if (answered) return;
@@ -212,6 +215,7 @@ function checkAnswer() {
   if (ok) { correctCount++; input.classList.add('correct'); fb.className='feedback correct show'; fb.innerHTML=`✓ Brawo! <strong>${w.en}</strong>`; }
   else { wrongCount++; input.classList.add('wrong'); fb.className='feedback wrong show'; fb.innerHTML=`✗ Niestety. Poprawna odpowiedź: <strong>${w.en}</strong>`; }
   results.push({word:w, ok});
+  answeredAt = Date.now();
   document.getElementById('q-score-live').innerHTML = `✓ ${correctCount} &nbsp;✗ ${wrongCount}`;
   document.getElementById('btn-check').style.display = 'none';
   document.getElementById('btn-skip').style.display = 'none';
@@ -221,6 +225,7 @@ function checkAnswer() {
 function skipQuestion() {
   if (answered) return;
   answered = true;
+  answeredAt = Date.now();
   const w = quizWords[currentIndex]; wrongCount++;
   results.push({word:w, ok:false});
   const input = document.getElementById('answer-input'); input.disabled = true; input.classList.add('wrong');
@@ -233,7 +238,16 @@ function skipQuestion() {
   else setTimeout(showResult, 1200);
 }
 function nextQuestion() { currentIndex++; loadQuestion(); }
-function handleKey(e) { if(e.key==='Enter'){ if(!answered) checkAnswer(); else if(currentIndex<quizWords.length-1) nextQuestion(); } }
+function handleKey(e) { if(e.key==='Enter'){ if(!answered){ if(document.getElementById('answer-input').value.trim()) checkAnswer(); else skipQuestion(); } else if(currentIndex<quizWords.length-1) nextQuestion(); } }
+document.addEventListener('keydown', e => {
+  if (e.key !== 'Enter') return;
+  if (answered && Date.now()-answeredAt>=250 && document.getElementById('screen-quiz').classList.contains('active')) {
+    if (currentIndex < quizWords.length-1) nextQuestion();
+  } else if (document.getElementById('screen-result').classList.contains('active')) {
+    const wc = results.filter(r => !r.ok).length;
+    if (wc > 0) retryWrong(); else startQuiz();
+  }
+});
 function showResult() {
   showScreen('result');
   const pct = Math.round((correctCount/quizWords.length)*100);
